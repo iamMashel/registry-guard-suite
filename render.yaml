@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: registry-guard-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 10000
+    dockerCommand: ./build.sh && uvicorn backend.src.api:app --host 0.0.0.0 --port 10000
+    # Ideally Render uses the Dockerfile.
+    # If using Docker runtime, Render simply builds the Dockerfile at root.
+    # The CMD in Dockerfile handles the start.
+    dockerContext: .
+    healthCheckPath: /health
+
+  # For Static Site (Frontend) - if deployed separately
+  # - type: static
+  #   name: registry-guard-frontend
+  #   buildCommand: npm install && npm run build
+  #   publishDir: dist

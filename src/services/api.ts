@@ -1,148 +1,82 @@
-/**
- * API Service Layer
- * 
- * This file provides a clean abstraction for API calls.
- * Currently uses mock data, but is architected for easy REST API integration.
- * 
- * To switch to real API:
- * 1. Set API_BASE_URL to your backend URL
- * 2. Uncomment the fetch implementations
- * 3. Remove mock data imports
- */
+import { DockerImage, recentBuilds, dashboardMetrics, transactionData, currencyData, schemaContract, validateData } from "@/data/mocks";
 
-import {
-  dockerImages,
-  recentBuilds,
-  dashboardMetrics,
-  transactionData,
-  currencyData,
-  schemaContract,
-  validateData as mockValidate,
-  getImageDetails as mockGetImageDetails,
-  type DockerImage,
-  type Build,
-  type DashboardMetrics,
-  type TransactionPoint,
-  type CurrencyDistribution,
-  type ValidationResult,
-} from '@/data/mocks';
+export interface RegistryData {
+  repository_tags: string[];
+  digest: string;
+  size_bytes: number;
+  layers: string[];
+  validation_checksum: string;
+  validated_row_count: number;
+}
 
-// API Configuration
-const API_BASE_URL = '/api'; // Change this for production
+export const queryKeys = {
+  images: ["images"],
+  metrics: ["metrics"],
+  recentBuilds: ["recentBuilds"],
+  transactions: ["transactions"],
+  currencies: ["currencies"],
+  schema: ["schema"],
+};
 
-// Simulated network delay for realistic UX
-const simulateDelay = (ms: number = 300) => 
-  new Promise(resolve => setTimeout(resolve, ms));
+export const fetchRegistryData = async (): Promise<RegistryData> => {
+  const response = await fetch("/api/registry");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch registry data: ${response.statusText}`);
+  }
+  return response.json();
+};
 
-/**
- * Fetch all Docker images
- * Endpoint: GET /api/images
- */
 export const fetchImages = async (): Promise<DockerImage[]> => {
-  await simulateDelay();
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/images`);
-  // return response.json();
-  return dockerImages;
+  try {
+    const data = await fetchRegistryData();
+
+    // Map backend data to DockerImage format
+    const realImage: DockerImage = {
+      id: "live-1",
+      tag: data.repository_tags[0] || "unknown",
+      status: "passed",
+      buildDate: new Date().toISOString(),
+      rowCount: data.validated_row_count,
+      sha256: data.digest,
+      size: `${(data.size_bytes / (1024 * 1024)).toFixed(2)} MB`,
+      labels: {
+        "com.registry.checksum": data.validation_checksum,
+        "com.registry.layers": data.layers.length.toString(),
+      }
+    };
+
+    return [realImage];
+  } catch (error) {
+    console.warn("Backend unavailable, falling back to mocks", error);
+    // Import dynamically or just return empty/mock if backend fails? 
+    // For now, let's return the mocks from the data file if the API fails, 
+    // OR we can just return the static mocks for other components that don't have endpoints yet.
+    const { dockerImages } = await import("@/data/mocks");
+    return dockerImages;
+  }
 };
 
-/**
- * Fetch single image details by tag
- * Endpoint: GET /api/images/:tag
- */
-export const fetchImageDetails = async (tag: string): Promise<DockerImage | undefined> => {
-  await simulateDelay(200);
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/images/${tag}`);
-  // return response.json();
-  return mockGetImageDetails(tag);
-};
-
-/**
- * Fetch dashboard overview metrics
- * Endpoint: GET /api/metrics/overview
- */
-export const fetchDashboardMetrics = async (): Promise<DashboardMetrics> => {
-  await simulateDelay();
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/metrics/overview`);
-  // return response.json();
+// Implement missing exports using mocks
+export const fetchDashboardMetrics = async () => {
   return dashboardMetrics;
 };
 
-/**
- * Fetch recent builds
- * Endpoint: GET /api/builds/recent
- */
-export const fetchRecentBuilds = async (): Promise<Build[]> => {
-  await simulateDelay();
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/builds/recent`);
-  // return response.json();
+export const fetchRecentBuilds = async () => {
   return recentBuilds;
 };
 
-/**
- * Fetch transaction volume data
- * Endpoint: GET /api/health/transactions
- */
-export const fetchTransactionData = async (): Promise<TransactionPoint[]> => {
-  await simulateDelay();
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/health/transactions`);
-  // return response.json();
+export const fetchTransactionData = async () => {
   return transactionData;
 };
 
-/**
- * Fetch currency distribution data
- * Endpoint: GET /api/health/currencies
- */
-export const fetchCurrencyData = async (): Promise<CurrencyDistribution[]> => {
-  await simulateDelay();
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/health/currencies`);
-  // return response.json();
+export const fetchCurrencyData = async () => {
   return currencyData;
 };
 
-/**
- * Fetch schema contract
- * Endpoint: GET /api/schema
- */
-export const fetchSchemaContract = async (): Promise<typeof schemaContract> => {
-  await simulateDelay(200);
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/schema`);
-  // return response.json();
+export const fetchSchemaContract = async () => {
   return schemaContract;
 };
 
-/**
- * Validate data against schema
- * Endpoint: POST /api/validate
- */
-export const validateDataPayload = async (input: string): Promise<ValidationResult> => {
-  await simulateDelay(500);
-  // Real implementation:
-  // const response = await fetch(`${API_BASE_URL}/validate`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ data: input }),
-  // });
-  // return response.json();
-  return mockValidate(input);
-};
-
-/**
- * React Query keys for cache management
- */
-export const queryKeys = {
-  images: ['images'] as const,
-  imageDetails: (tag: string) => ['images', tag] as const,
-  metrics: ['metrics'] as const,
-  builds: ['builds'] as const,
-  transactions: ['transactions'] as const,
-  currencies: ['currencies'] as const,
-  schema: ['schema'] as const,
+export const validateDataPayload = async (payload: string) => {
+  return validateData(payload);
 };

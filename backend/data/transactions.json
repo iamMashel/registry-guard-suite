@@ -1,0 +1,20 @@
+[
+  {
+    "transaction_id": "tx_001",
+    "amount": 100.50,
+    "currency": "USD",
+    "timestamp": "2023-10-27T10:00:00Z",
+    "sender_id": "user_123",
+    "receiver_id": "user_456",
+    "status": "COMPLETED"
+  },
+  {
+    "transaction_id": "tx_002",
+    "amount": 500.00,
+    "currency": "EUR",
+    "timestamp": "2023-10-28T14:30:00Z",
+    "sender_id": "user_789",
+    "receiver_id": "user_123",
+    "status": "PENDING"
+  }
+]
