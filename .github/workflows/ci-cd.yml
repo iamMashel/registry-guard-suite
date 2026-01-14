@@ -21,17 +21,20 @@ jobs:
     - name: Install dependencies
       run: |
         cd backend
-        uv pip install -r pyproject.toml --system
-        # Or standard install if pyproject is used directly map
-        uv pip install .[test]
-        # Installing test deps explicitly if not in project
-        uv pip install pytest httpx
+        uv venv
+        # Source the venv for subsequent steps in this shell block if needed, 
+        # but better to rely on uv run or explicit path.
+        # Installing into the virtual environment:
+        . .venv/bin/activate
+        uv pip install -e .[test]
 
     - name: Run Unit Tests
       run: |
         cd backend
+        # Activate environment
+        . .venv/bin/activate
         export PYTHONPATH=$PWD
-        uv run pytest tests
+        pytest tests
 
   test-frontend:
     runs-on: ubuntu-latest
@@ -70,5 +73,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Render
-        run: echo "Triggering Render deploy..."
-        # curl -X POST $RENDER_DEPLOY_HOOK
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$deploy_url" ]; then
+            curl -X POST "$deploy_url"
+          else
+            echo "RENDER_DEPLOY_HOOK not set, skipping deployment trigger."
+          fi
